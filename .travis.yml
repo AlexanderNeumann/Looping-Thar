@@ -15,4 +15,4 @@ install:
     - pip install -U platformio
 
 script:
-    - platformio ci --board=uno --board=due 
+    - platformio ci --board=uno
