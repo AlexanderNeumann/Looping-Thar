@@ -5,7 +5,7 @@
 const uint8_t pump_pin   = 12;
 
 int delay_pump = 500;
-int delay_valve = 5000;
+//int delay_valve = 100;
 
 
 const uint8_t valve_pin[4] {
@@ -18,11 +18,14 @@ const uint8_t valve_pin[4] {
 
 void give_shot(int valve) {
     start_pump(); 
+    //for(int i=0; i<10; i++) {
     delay(delay_pump);
     open_valve(valve);
     delay(delay_valve);
     close_valve(valve);
     delay(delay_pump);
+    
+   //}
     stop_pump();
 }
 
@@ -60,12 +63,12 @@ pinMode(valve_pin[i], OUTPUT);
 
 
 
-
+give_shot(0);
 }
 
 void loop() {
 
-give_shot(0);
+
 
 delay(3000);
 
