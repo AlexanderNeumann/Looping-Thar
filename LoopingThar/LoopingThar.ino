@@ -1,20 +1,22 @@
+#include "pitches.h"
+
 // Player pins
+//rot, lila, grün, blau
+int echos[] = {A5,A3,A4,9999};
 // rot, lila, grün, blau
-int echos[] = {A1,A2,A3,A4};
-// rot, lila, grün, blau
-int trigger[] = {A5,6,7,13};
+int trigger[] = {6,13,7,9999};
 // rot, lila, grün, blau
 long dauer[] = {0,0,0,0};
 // rot, lila, grün, blau
 int collisions[] = {0,0,0,0};
-// rot, lila, grün, blau
+// rot, lila, grün, GELB
 int entfernung[] = {0,0,0,0};
 
 // Speed regulation pin
 int speedRegulationPin = 3;
 
 // Intervals for the speed regulation
-int intervalls[] = {0,130,150,200,255};
+int intervalls[] = {90,130,150,200,255};
 // Sensitivity for the speed regulation resistor
 int sensitivity = 900; 
 
@@ -22,13 +24,50 @@ int sensitivity = 900;
 const uint8_t pump_pin   = 12;
 
 // delays for the pump
-int delay_pump = 500;
-int delay_valve = 5000;
+int delay_pump = 100;
+int delay_valve = 100;
 
 // valve pins
 const uint8_t valve_pin[4] {11,10,9,8};
 
+//temp
+int counter = 3;
+int hasToDrink = 0; 
+const int pingPin = A0;
+long duration = 0;
+int soundPin = A1;
+
+// notes in the melody:
+int melody[] = {
+  NOTE_C4, NOTE_G3, NOTE_G3, NOTE_A3, NOTE_G3, 0, NOTE_B3, NOTE_C4
+};
+
+// note durations: 4 = quarter note, 8 = eighth note, etc.:
+int noteDurations[] = {
+  4, 8, 8, 4, 4, 4, 4, 4
+};
+
+
+void playSound(){
+    for (int thisNote = 0; thisNote < 8; thisNote++) {
+
+    // to calculate the note duration, take one second
+    // divided by the note type.
+    //e.g. quarter note = 1000 / 4, eighth note = 1000/8, etc.
+    int noteDuration = 1000 / noteDurations[thisNote];
+    tone(soundPin, melody[thisNote], noteDuration);
+
+    // to distinguish the notes, set a minimum time between them.
+    // the note's duration + 30% seems to work well:
+    int pauseBetweenNotes = noteDuration * 1.30;
+    delay(pauseBetweenNotes);
+    // stop the tone playing:
+    noTone(soundPin);
+  }
+}
+
 void setup() {
+  playSound();
   // initialize timer1 
   noInterrupts();           // disable all interrupts
   TCCR1A = 0;
@@ -44,8 +83,9 @@ void setup() {
   Serial.begin(9600);
   Serial.println("Start ");
   // Initialize player colision pins
-  for (int playerPin = 0; playerPin < (sizeof(trigger)/sizeof(int)); playerPin++) {
+  for (int playerPin = 0; playerPin < counter; playerPin++) {
     pinMode(trigger[playerPin], OUTPUT); 
+    pinMode(echos[playerPin], INPUT); 
   }
 
 
@@ -66,19 +106,38 @@ void setup() {
 }
 
 void loop() {
-  int hasToDrink = 0;
-  for(int i=0;i<4;i++){
+  hasToDrink = 0;
+  for(int i=0;i<counter;i++){
     digitalWrite(trigger[i], LOW); //Hier nimmt man die Spannung für kurze Zeit vom Trigger-Pin, damit man später beim senden des Trigger-Signals ein rauschfreies Signal hat.
     digitalWrite(trigger[i], HIGH); //Jetzt sendet man eine Ultraschallwelle los.
     digitalWrite(trigger[i], LOW);//Dann wird der „Ton“ abgeschaltet.
 
-    dauer[i] = pulseIn(echos[i], HIGH);
+    dauer[i] = pulseIn(echos[i], HIGH, 10000);
     entfernung[i] = (dauer[i]/2) * 0.03432;
     hasToDrink = checkCol();
     if(hasToDrink>0) {
-      // Rikus ihm seine Funktion
+        failed(hasToDrink); 
     }
+ // Serial.print(i);
+ // Serial.print(": ");
+ // Serial.println(entfernung[i]);
   }
+  pinMode(pingPin, OUTPUT);
+  digitalWrite(pingPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(pingPin, HIGH);
+  delayMicroseconds(5);
+  digitalWrite(pingPin, LOW);
+
+  pinMode(pingPin, INPUT);
+  duration = pulseIn(pingPin, HIGH,10000);
+  entfernung[3] = duration/ 29 / 2;
+    // Serial.print("3: ");
+    // Serial.println(entfernung[3]);
+      hasToDrink = checkCol();
+    if(hasToDrink>0) {
+    failed(hasToDrink);
+    }
 }
 
 ISR(TIMER1_COMPA_vect)          // timer compare interrupt service routine
@@ -92,7 +151,7 @@ void randomSpeed(){
   int ri = random(4);
     analogWrite(3, intervalls[ri]);
     Serial.println(ri);
-    if(random(2)==1){
+    if(random(4)>=3){
       digitalWrite(4,LOW);
       digitalWrite(5,HIGH);
     }else{
@@ -138,12 +197,21 @@ int checkCol(){
     if(entfernung[i] <10 && entfernung[i]>8){
         Serial.print("Player: ");
         Serial.print(i+1);
-        Serial.print(" collided.");
+        Serial.println(" collided.");
         collisions[i]++;
         entfernung[i]=0;
         return i+1; 
     }
   }
   return 0;
+}
+
+
+void failed(int a){
+  playSound();
+  delay(2000);
+  give_shot(a);
+  delay(2000);
+  tone(soundPin, 600, 1000);
 }
 
