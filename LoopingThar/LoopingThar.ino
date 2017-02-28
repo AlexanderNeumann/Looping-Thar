@@ -1,5 +1,14 @@
 // Player pins
-int player[] = {A2,A3,A4,A5};
+// rot, lila, grün, blau
+int echos[] = {A1,A2,A3,A4};
+// rot, lila, grün, blau
+int trigger[] = {A5,6,7,13};
+// rot, lila, grün, blau
+long dauer[] = {0,0,0,0};
+// rot, lila, grün, blau
+int collisions[] = {0,0,0,0};
+// rot, lila, grün, blau
+int entfernung[] = {0,0,0,0};
 
 // Speed regulation pin
 int speedRegulationPin = 3;
@@ -35,9 +44,10 @@ void setup() {
   Serial.begin(9600);
   Serial.println("Start ");
   // Initialize player colision pins
-  for (int playerPin = 0; playerPin < (sizeof(player)/sizeof(int)); playerPin++) {
-    pinMode(player[playerPin], OUTPUT);
+  for (int playerPin = 0; playerPin < (sizeof(trigger)/sizeof(int)); playerPin++) {
+    pinMode(trigger[playerPin], OUTPUT); 
   }
+
 
   // Initialize pump pins
   pinMode(pump_pin, OUTPUT);
@@ -56,17 +66,18 @@ void setup() {
 }
 
 void loop() {
-  checkCollision();
-  // ToDo Make use of a timer (delay not possible -> we need the collision detection)
-}
+  int hasToDrink = 0;
+  for(int i=0;i<4;i++){
+    digitalWrite(trigger[i], LOW); //Hier nimmt man die Spannung für kurze Zeit vom Trigger-Pin, damit man später beim senden des Trigger-Signals ein rauschfreies Signal hat.
+    digitalWrite(trigger[i], HIGH); //Jetzt sendet man eine Ultraschallwelle los.
+    digitalWrite(trigger[i], LOW);//Dann wird der „Ton“ abgeschaltet.
 
-void checkCollision(){
-  for (int playerPin = 0; playerPin < (sizeof(player)/sizeof(int)); playerPin++) {
-    if(analogRead(player[playerPin]) > sensitivity) {
-      Serial.print("Player ");
-      Serial.print(playerPin);
-      Serial.println(" collided");
-    } 
+    dauer[i] = pulseIn(echos[i], HIGH);
+    entfernung[i] = (dauer[i]/2) * 0.03432;
+    hasToDrink = checkCol();
+    if(hasToDrink>0) {
+      // Rikus ihm seine Funktion
+    }
   }
 }
 
@@ -122,4 +133,17 @@ void close_valve(int valve) {
     
 }
 
+int checkCol(){
+  for(int i=0;i<4;i++){
+    if(entfernung[i] <10 && entfernung[i]>8){
+        Serial.print("Player: ");
+        Serial.print(i+1);
+        Serial.print(" collided.");
+        collisions[i]++;
+        entfernung[i]=0;
+        return i+1; 
+    }
+  }
+  return 0;
+}
 
