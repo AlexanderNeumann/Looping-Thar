@@ -1,9 +1,9 @@
 #include "pitches.h"
 
-// Player pins
-//rot, lila, grün, blau
+// Player pins lila grün getauscht
+//rot A5, lila A4, grün A3, blau
 int echos[] = {A5,A3,A4,9999};
-// rot, lila, grün, blau
+// rot 6, lila 7, grün 13, blau 
 int trigger[] = {6,13,7,9999};
 // rot, lila, grün, blau
 long dauer[] = {0,0,0,0};
@@ -206,11 +206,11 @@ int checkCol(){
   return 0;
 }
 
-
 void failed(int a){
   playSound();
   delay(2000);
-  give_shot(a);
+  give_shot(a-1);
+  Serial.println(a-1);
   delay(2000);
   tone(soundPin, 600, 1000);
 }
