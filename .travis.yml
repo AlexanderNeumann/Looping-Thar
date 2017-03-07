@@ -9,6 +9,7 @@ cache:
         - "~/.platformio"
 
 env:
+    - PLATFORMIO_CI_SRC=LoopingThar/LoopingThar.ino
     - PLATFORMIO_CI_SRC=LoopingThar
 
 install:
